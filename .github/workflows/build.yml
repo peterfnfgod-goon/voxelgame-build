@@ -12,7 +12,7 @@ jobs:
 
       - name: Extract Project Files via Python
         run: |
-          python3 -c "import zipfile; zipfile.ZipFile('Voxelgame.zip').extractall('.')"
+          python3 -c "import os, glob, zipfile; zip_files = glob.glob('*.zip'); print('Found zips:', zip_files); zipfile.ZipFile(zip_files[0]).extractall('.')"
 
       - name: Build
         run: |
