@@ -16,26 +16,34 @@ jobs:
 
       - name: Fix Directory Structure Automatically
         run: |
-          # If the zip extracted files straight into the root instead of a 'voxelgame' folder, fix it:
+          # Case 1: If the zip extracted files straight into the root instead of a 'voxelgame' folder
           if [ ! -d "voxelgame" ] && [ -f "Makefile" ]; then
-            echo "Rearranging flattened files..."
-            mkdir -p voxelgame
-            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame' ! -name '*.zip' -exec mv {} voxelgame/ \;
+            echo "Moving root files into a temporary structure..."
+            mkdir -p voxelgame_tmp
+            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame_tmp' ! -name '*.zip' -exec mv {} voxelgame_tmp/ \;
+            mv voxelgame_tmp voxelgame
           fi
           
-          # If main.c is floating out in the open instead of inside source/
+          # Case 2: If 'voxelgame' exists but the contents were nested under another subfolder inside it
+          if [ -d "voxelgame/voxelgame" ]; then
+            echo "Fixing double nested voxelgame folder..."
+            mv voxelgame/voxelgame/* voxelgame/ 2>/dev/null || true
+            rmdir voxelgame/voxelgame 2>/dev/null || true
+          fi
+          
+          # Ensure essential folders exist
+          mkdir -p voxelgame/source
+          mkdir -p voxelgame/data
+          mkdir -p voxelgame/romfs
+          mkdir -p voxelgame/include
+
+          # If code files were flattened into the main 'voxelgame' folder by the zip utility, move them to source/
           if [ -f "voxelgame/main.c" ]; then
-            echo "Moving source files to source/ directory..."
-            mkdir -p voxelgame/source
-            mkdir -p voxelgame/data
-            mkdir -p voxelgame/romfs
-            mv voxelgame/*.c voxelgame/source/ 2>/dev/null || true
-            mv voxelgame/*.cpp voxelgame/source/ 2>/dev/null || true
-            mv voxelgame/*.h voxelgame/source/ 2>/dev/null || true
-            mv voxelgame/*.v.pica voxelgame/source/ 2>/dev/null || true
+            echo "Flattened files detected. Moving them to source/..."
+            find voxelgame -maxdepth 1 -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.vsh" -o -name "*.VSH" -o -name "*.pica" -o -name "*.shlist" \) -exec mv {} voxelgame/source/ \; 2>/dev/null || true
           fi
           
-          echo "Current directory contents:"
+          echo "Final layout check before compilation:"
           ls -R voxelgame
 
       - name: Build
