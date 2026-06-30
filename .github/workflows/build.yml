@@ -14,21 +14,18 @@ jobs:
         run: |
           python3 -c "import os, glob, zipfile; zip_files = glob.glob('*.zip'); print('Found zips:', zip_files); zipfile.ZipFile(zip_files[0]).extractall('.')"
 
-      - name: Force Build Directory Structure & Debug Files
+      - name: Force Build Directory Structure & Inject Shader
         run: |
+          # 1. If everything extracted into the root instead of a 'voxelgame' folder, move it into one
           if [ ! -d "voxelgame" ] && [ -f "Makefile" ]; then
             mkdir -p voxelgame_tmp
-            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame_tmp' ! -name '*.zip' -exec mv {} voxelgame_tmp/ \;
+            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame_tmp' ! -name '*.zip' ! -name 'vshader.v.pica' -exec mv {} voxelgame_tmp/ \;
             mv voxelgame_tmp voxelgame
           fi
 
+          # 2. Go inside voxelgame and fix flattened structures
           cd voxelgame
           
-          # Show us EXACTLY what files you uploaded before we move anything
-          echo "=== ALL UPLOADED FILES ==="
-          find . -type f
-          echo "=========================="
-
           mkdir -p temp_src
           find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.vsh" -o -name "*.VSH" -o -name "*.pica" -o -name "*.shlist" \) -exec mv {} temp_src/ \;
 
@@ -36,7 +33,17 @@ jobs:
           mkdir -p source
           mv temp_src/* source/ 2>/dev/null || true
           rm -rf temp_src
+          
+          # 3. Pull the vshader.v.pica file from the root into the source directory
+          if [ -f "../vshader.v.pica" ]; then
+            echo "Injecting vshader.v.pica from repository root..."
+            cp ../vshader.v.pica source/
+          fi
+
           mkdir -p data romfs include
+
+          echo "=== Verified Source Directory Files ==="
+          ls -l source
 
       - name: Build
         run: |
