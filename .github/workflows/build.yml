@@ -16,12 +16,14 @@ jobs:
           unzip voxelgame_updated.zip
 
       - name: Build
-        run: make
+        run: |
+          cd voxelgame
+          make
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: voxelgame-build-files
           path: |
-            *.3dsx
-            *.cia
+            voxelgame/*.3dsx
+            voxelgame/*.cia
