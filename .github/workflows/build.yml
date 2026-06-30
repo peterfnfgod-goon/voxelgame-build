@@ -14,6 +14,30 @@ jobs:
         run: |
           python3 -c "import os, glob, zipfile; zip_files = glob.glob('*.zip'); print('Found zips:', zip_files); zipfile.ZipFile(zip_files[0]).extractall('.')"
 
+      - name: Fix Directory Structure Automatically
+        run: |
+          # If the zip extracted files straight into the root instead of a 'voxelgame' folder, fix it:
+          if [ ! -d "voxelgame" ] && [ -f "Makefile" ]; then
+            echo "Rearranging flattened files..."
+            mkdir -p voxelgame
+            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame' ! -name '*.zip' -exec mv {} voxelgame/ \;
+          fi
+          
+          # If main.c is floating out in the open instead of inside source/
+          if [ -f "voxelgame/main.c" ]; then
+            echo "Moving source files to source/ directory..."
+            mkdir -p voxelgame/source
+            mkdir -p voxelgame/data
+            mkdir -p voxelgame/romfs
+            mv voxelgame/*.c voxelgame/source/ 2>/dev/null || true
+            mv voxelgame/*.cpp voxelgame/source/ 2>/dev/null || true
+            mv voxelgame/*.h voxelgame/source/ 2>/dev/null || true
+            mv voxelgame/*.v.pica voxelgame/source/ 2>/dev/null || true
+          fi
+          
+          echo "Current directory contents:"
+          ls -R voxelgame
+
       - name: Build
         run: |
           cd voxelgame
