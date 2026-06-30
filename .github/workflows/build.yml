@@ -14,37 +14,36 @@ jobs:
         run: |
           python3 -c "import os, glob, zipfile; zip_files = glob.glob('*.zip'); print('Found zips:', zip_files); zipfile.ZipFile(zip_files[0]).extractall('.')"
 
-      - name: Fix Directory Structure Automatically
+      - name: Force Build Directory Structure
         run: |
-          # Case 1: If the zip extracted files straight into the root instead of a 'voxelgame' folder
+          # 1. If everything extracted into the root instead of a 'voxelgame' folder, move it into one
           if [ ! -d "voxelgame" ] && [ -f "Makefile" ]; then
-            echo "Moving root files into a temporary structure..."
+            echo "Moving root files into voxelgame folder..."
             mkdir -p voxelgame_tmp
             find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.github' ! -name 'voxelgame_tmp' ! -name '*.zip' -exec mv {} voxelgame_tmp/ \;
             mv voxelgame_tmp voxelgame
           fi
-          
-          # Case 2: If 'voxelgame' exists but the contents were nested under another subfolder inside it
-          if [ -d "voxelgame/voxelgame" ]; then
-            echo "Fixing double nested voxelgame folder..."
-            mv voxelgame/voxelgame/* voxelgame/ 2>/dev/null || true
-            rmdir voxelgame/voxelgame 2>/dev/null || true
-          fi
-          
-          # Ensure essential folders exist
-          mkdir -p voxelgame/source
-          mkdir -p voxelgame/data
-          mkdir -p voxelgame/romfs
-          mkdir -p voxelgame/include
 
-          # If code files were flattened into the main 'voxelgame' folder by the zip utility, move them to source/
-          if [ -f "voxelgame/main.c" ]; then
-            echo "Flattened files detected. Moving them to source/..."
-            find voxelgame -maxdepth 1 -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.vsh" -o -name "*.VSH" -o -name "*.pica" -o -name "*.shlist" \) -exec mv {} voxelgame/source/ \; 2>/dev/null || true
-          fi
+          # 2. Go inside voxelgame and fix flattened structures
+          cd voxelgame
           
-          echo "Final layout check before compilation:"
-          ls -R voxelgame
+          # Find any source files scattered deep or flat and gather them into a clean temporary area
+          mkdir -p temp_src
+          find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.vsh" -o -name "*.VSH" -o -name "*.pica" -o -name "*.shlist" \) -exec mv {} temp_src/ \;
+
+          # Clean up any broken/empty folder structures left behind
+          rm -rf source
+          mkdir -p source
+          
+          # Move all collected code files cleanly into the source directory
+          mv temp_src/* source/ 2>/dev/null || true
+          rm -rf temp_src
+
+          # Ensure other required build folders exist
+          mkdir -p data romfs include
+
+          echo "--- Cleaned Directory Map ---"
+          ls -R
 
       - name: Build
         run: |
