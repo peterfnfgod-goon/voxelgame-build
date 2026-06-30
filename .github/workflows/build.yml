@@ -10,11 +10,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Unzip and Extract Project
+      - name: Extract Project Files via Python
         run: |
-          # Use the container's built-in package manager (pacman) to get unzip
-          dkp-pacman -Syu --noconfirm unzip
-          unzip voxelgame_updated.zip
+          python3 -c "import zipfile; zipfile.ZipFile('voxelgame_updated.zip').extractall('.')"
 
       - name: Build
         run: |
