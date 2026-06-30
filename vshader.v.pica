@@ -1,0 +1,26 @@
+// 3DS Voxel Vertex Shader
+
+// Uniforms
+.fvec coordinate_uniform[4]
+
+// Inputs
+.vtx_in input_position    v0
+.vtx_in input_color       v1
+.vtx_in input_texcoord    v2
+
+// Outputs
+.out output_position    position
+.out output_color       color
+.out output_texcoord    texcoord
+
+.proc main
+    // Pass position through directly
+    mov output_position, input_position
+    
+    // Pass color and texture coordinates through
+    mov output_color, input_color
+    mov output_texcoord, input_texcoord
+    
+    end
+.end
+
